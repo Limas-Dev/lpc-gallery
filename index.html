@@ -45,29 +45,19 @@
                     <p id="preview-badge" class="hidden-force text-xs bg-yellow-500/20 text-yellow-300 mt-2 py-1 px-3 rounded-full inline-block">Preview Mode (Auto-Login)</p>
                 </div>
 
-                <form id="email-form" class="space-y-4">
-                    <div>
-                        <label class="text-gray-400 text-xs font-bold ml-2 mb-1 block uppercase">Institutional Email</label>
-                        <div class="relative">
-                            <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5"></i>
-                            <input type="email" id="email-input" required placeholder="your.name27@lpcuwc.edu.hk" class="w-full bg-gray-800/50 border border-gray-700 focus:border-purple-500 text-white rounded-xl py-4 pl-12 pr-4 outline-none transition-all placeholder:text-gray-600 font-medium">
-                        </div>
-                    </div>
-                    <button type="submit" id="email-btn" class="w-full bg-white hover:bg-gray-100 text-black font-bold py-4 rounded-xl transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
-                        <span>Get Magic Link</span> <i data-lucide="sparkles" class="w-4 h-4"></i>
-                    </button>
-                </form>
+                <!-- Google Login (production mode) -->
+                <div id="google-login-container" class="hidden-force">
+                <button id="google-login-btn" class="w-full bg-white hover:bg-gray-100 text-black font-bold py-4 rounded-xl transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 whitespace-nowrap leading-none text-sm md:text-base">
+                    <i data-lucide="mail" class="w-5 h-5"></i>
+                    <span>Sign in with Google</span>
+                </button>
+                    <p class="text-gray-500 text-xs text-center mt-4">USE YOUR SCHOOL ACCOUNT</p>
+                </div>
 
-                <div id="link-sent-message" class="hidden-force text-center space-y-4">
-                    <div class="bg-purple-900/40 p-6 rounded-2xl border border-purple-500/30">
-                        <i data-lucide="mail-check" class="w-12 h-12 text-pink-400 mx-auto mb-3"></i>
-                        <h3 class="text-white font-bold text-lg mb-2">Check your email!</h3>
-                        <p class="text-gray-300 text-sm">We sent a secure login link to <br><span id="sent-email-display" class="font-bold text-white"></span>.</p>
-                        <p class="text-gray-400 text-xs mt-4">Click the link to enter automatically.</p>
-                    </div>
-                    <button type="button" id="resend-btn" class="w-full text-gray-500 text-xs hover:text-white transition-colors flex items-center justify-center gap-1 mt-4">
-                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> Use a different email
-                    </button>
+                <!-- Preview mode info (anonymous mode) -->
+                <div id="preview-login-info" class="hidden-force text-center text-gray-400">
+                    <p class="text-sm">Preview Mode Active</p>
+                    <p class="text-xs mt-2">Automatic anonymous login</p>
                 </div>
             </div>
         </div>
@@ -123,7 +113,7 @@
                         <div id="upload-preview-container" class="hidden-force relative w-full h-full rounded-2xl overflow-hidden group bg-black">
                             <img id="upload-preview-img" src="" alt="Preview" class="w-full h-full object-contain">
                             <button type="button" id="clear-image-btn" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-bold transition-opacity w-full">
-                                <i data-lucide="x" class="w-4 h-4 mr-2"></i> Change
+                                <i data-lucide="x" class="w-4 mr-2"></i> Change
                             </button>
                         </div>
                     </div>
@@ -172,13 +162,32 @@
     </div>
 
     <script type="module">
+        // ============================================================
+        // Firebase Imports
+        // ============================================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            signOut, 
+            onAuthStateChanged, 
+            signInAnonymously 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            onSnapshot, 
+            deleteDoc, 
+            doc 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ================= CONFIGURATION & DUAL MODE =================
+        // ============================================================
+        // Configuration & Environment Detection
+        // ============================================================
         
-        // 1. User Config (For Production/Export)
+        // Production Firebase configuration (used when not in preview)
         const userConfig = {
             apiKey: "AIzaSyDw2HOL1uAgeTv8b9L1leXZ94tMpm36pOo",
             authDomain: "lpcgallery-a45bf.firebaseapp.com",
@@ -190,31 +199,27 @@
         };
         const userAppIdPath = 'lpcgallery-production';
 
-        // 2. Detection Logic
-        // If __firebase_config exists, we are in the Preview Environment.
-        // We MUST use the environment config for the database to work here.
+        // Detect if running in the preview environment (provided by the hosting platform)
         const isPreview = typeof __firebase_config !== 'undefined';
         
+        // Use preview config if available, otherwise use the production config
         const firebaseConfig = isPreview ? JSON.parse(__firebase_config) : userConfig;
         const appId = isPreview ? (typeof __app_id !== 'undefined' ? __app_id : 'default') : userAppIdPath;
 
-        // Initialize
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        if (isPreview) {
-            console.log("🛠️ Running in Preview Mode: Using Environment Config & Anonymous Auth");
-            document.getElementById('preview-badge').classList.remove('hidden-force');
-        }
-
-        // ================= STATE & GLOBALS =================
+        // ============================================================
+        // Global State & DOM Elements
+        // ============================================================
         let currentUser = null;
         let currentPhotoIdToDelete = null;
         let photos = [];
         let uploadImageData = '';
 
-        // ================= DOM ELEMENTS =================
+        // UI Elements
         const loginScreen = document.getElementById('login-screen');
         const appScreen = document.getElementById('app-screen');
         const uploadModal = document.getElementById('upload-modal');
@@ -222,9 +227,11 @@
         const deleteModal = document.getElementById('delete-modal');
         const notificationContainer = document.getElementById('notification-container');
         
-        const emailForm = document.getElementById('email-form');
-        const emailInput = document.getElementById('email-input');
-        const linkSentMessage = document.getElementById('link-sent-message');
+        const googleLoginContainer = document.getElementById('google-login-container');
+        const previewLoginInfo = document.getElementById('preview-login-info');
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        const previewBadge = document.getElementById('preview-badge');
+        
         const uploadForm = document.getElementById('upload-form');
         const fileInput = document.getElementById('file-input');
         const captionInput = document.getElementById('caption-input');
@@ -238,7 +245,14 @@
         const galleryGrid = document.getElementById('gallery-grid');
         const emptyState = document.getElementById('empty-state');
 
-        // ================= UTILITIES =================
+        // ============================================================
+        // Utility Functions
+        // ============================================================
+        
+        /**
+         * Formats an email into a display name.
+         * Example: "john.doe27@lpcuwc.edu.hk" -> "John Doe 27"
+         */
         const getAuthorFromEmail = (email) => {
             if (!email) return 'Anonymous';
             try {
@@ -256,6 +270,9 @@
             }
         };
 
+        /**
+         * Compresses a base64 image to reduce file size.
+         */
         const compressImage = (base64Str, maxWidth = 800, quality = 0.7) => { 
             return new Promise((resolve) => {
                 const img = new Image();
@@ -277,6 +294,9 @@
             });
         };
 
+        /**
+         * Displays a temporary notification at the top of the screen.
+         */
         const showNotification = (message, type = 'info') => {
             const el = document.createElement('div');
             const bgClass = type === 'error' ? 'bg-red-500/90' : type === 'warning' ? 'bg-orange-500/90' : 'bg-indigo-600/90';
@@ -294,38 +314,69 @@
             }, 4000);
         };
 
-        // ================= AUTHENTICATION LOGIC =================
-        
+        // ============================================================
+        // Google Sign-In (Production Only)
+        // ============================================================
+        const provider = new GoogleAuthProvider();
+        // Force Google to only allow accounts from the school domain
+        provider.setCustomParameters({ hd: 'lpcuwc.edu.hk' });
+
+        /**
+         * Handles Google sign-in popup and enforces student email rule.
+         */
+        async function loginWithGoogle() {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const email = result.user.email;
+
+                // Regex: must have digits before @lpcuwc.edu.hk (e.g., 27, 25)
+                const studentEmailRegex = /\d+@lpcuwc\.edu\.hk$/i;
+
+                if (studentEmailRegex.test(email)) {
+                    console.log("Student authorized:", email);
+                    showNotification('Welcome to the Secret Gallery!', 'success');
+                    // The onAuthStateChanged observer will handle UI transition
+                } else {
+                    // Teacher or invalid email – sign out immediately
+                    await signOut(auth);
+                    console.error("Access denied for:", email);
+                    showNotification('Access denied! Only students are allowed.', 'error');
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+                showNotification('Login failed. Please try again.', 'error');
+            }
+        }
+
+        // ============================================================
+        // Authentication Initialization
+        // ============================================================
         const initAuth = async () => {
             if (isPreview) {
-                // In Preview Mode, we force Anonymous Auth because Magic Link 
-                // requires specific domain whitelisting that the preview environment lacks.
+                // Preview mode: automatically sign in anonymously
+                previewBadge.classList.remove('hidden-force');
+                googleLoginContainer.classList.add('hidden-force');
+                previewLoginInfo.classList.remove('hidden-force');
                 try {
                     await signInAnonymously(auth);
                 } catch (error) {
-                    console.error("Anon auth failed", error);
-                    showNotification("Preview Auth Error: " + error.message, "error");
+                    console.error("Anonymous auth failed:", error);
+                    showNotification("Preview authentication error: " + error.message, "error");
                 }
             } else {
-                // In Production (User Config), we check for Magic Link
-                if (isSignInWithEmailLink(auth, window.location.href)) {
-                    let email = window.localStorage.getItem('emailForSignIn');
-                    if (!email) {
-                        email = window.prompt('Please confirm your email:');
-                    }
-                    try {
-                        await signInWithEmailLink(auth, email, window.location.href);
-                        window.localStorage.removeItem('emailForSignIn');
-                        window.history.replaceState(null, '', window.location.pathname);
-                    } catch (error) {
-                        showNotification('Invalid or expired link.', 'error');
-                    }
-                }
+                // Production mode: show Google login button, hide preview info
+                previewBadge.classList.add('hidden-force');
+                googleLoginContainer.classList.remove('hidden-force');
+                previewLoginInfo.classList.add('hidden-force');
+                googleLoginBtn.addEventListener('click', loginWithGoogle);
             }
         };
 
         initAuth();
-        
+
+        // ============================================================
+        // Auth State Observer
+        // ============================================================
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
@@ -337,60 +388,21 @@
                 currentUser = null;
                 loginScreen.classList.remove('hidden-force');
                 appScreen.classList.add('hidden-force');
-                emailForm.classList.remove('hidden-force');
-                linkSentMessage.classList.add('hidden-force');
             }
         });
 
-        // Email Form Submit (Only used in Production/Export)
-        emailForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (isPreview) return; // Should not happen as logic skips this, but safety first
-
-            const email = emailInput.value.trim();
-            const isStudentEmail = /\d@lpcuwc\.edu\.hk$/i.test(email);
-
-            if (isStudentEmail || email.endsWith('@lpcuwc.edu.hk')) {
-                const btn = document.getElementById('email-btn');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sending...';
-                btn.disabled = true;
-
-                const actionCodeSettings = {
-                    url: window.location.origin + window.location.pathname,
-                    handleCodeInApp: true,
-                };
-
-                try {
-                    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-                    window.localStorage.setItem('emailForSignIn', email);
-                    
-                    emailForm.classList.add('hidden-force');
-                    document.getElementById('sent-email-display').innerText = email;
-                    linkSentMessage.classList.remove('hidden-force');
-                    showNotification(`Magic Link sent!`, 'success');
-                } catch (error) {
-                    showNotification(`Error: ${error.message}`, 'error');
-                } finally {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
-            } else {
-                showNotification('Access denied. Use @lpcuwc.edu.hk', 'error');
-            }
-        });
-
-        document.getElementById('resend-btn').addEventListener('click', () => {
-            linkSentMessage.classList.add('hidden-force');
-            emailForm.classList.remove('hidden-force');
-            emailInput.value = '';
-        });
-
+        // Logout button
         document.getElementById('logout-btn').addEventListener('click', () => {
             signOut(auth);
         });
 
-        // ================= GALLERY LOGIC =================
+        // ============================================================
+        // Gallery Management
+        // ============================================================
+        
+        /**
+         * Renders the gallery grid with all photos.
+         */
         const renderGallery = () => {
             galleryGrid.innerHTML = '';
             
@@ -405,10 +417,7 @@
                 const card = document.createElement('div');
                 card.className = 'relative group cursor-pointer break-inside-avoid mb-8 animate-enter';
                 
-                // Permission Check for Deletion:
-                // In Preview mode (Anonymous), everyone is effectively 'Anonymous', 
-                // so we allow deletion if IDs match (which they will if same session) OR just hide it.
-                // For simplicity, we compare IDs.
+                // Only allow deletion if the current user is the owner
                 const isOwner = currentUser && photo.userId === currentUser.uid;
                 
                 const deleteButtonHTML = isOwner ? `
@@ -440,7 +449,7 @@
                     </div>
                 `;
                 
-                // Event Listeners for buttons
+                // View button handler
                 card.querySelector('.view-btn').addEventListener('click', (e) => {
                     e.stopPropagation();
                     document.getElementById('fullscreen-img').src = photo.url;
@@ -449,6 +458,7 @@
                     fullscreenViewer.classList.remove('hidden-force');
                 });
 
+                // Delete button handler (if present)
                 const delBtn = card.querySelector('.delete-btn');
                 if (delBtn) {
                     delBtn.addEventListener('click', (e) => {
@@ -463,10 +473,12 @@
             lucide.createIcons();
         };
 
+        /**
+         * Initializes real-time listener for the gallery collection.
+         */
         const initGallery = () => {
             if (!currentUser) return;
             
-            // Critical Fix: Use dynamic appId path for Preview, static for Prod
             const photosRef = collection(db, 'artifacts', appId, 'public', 'data', 'photos');
             
             onSnapshot(photosRef, (snapshot) => {
@@ -474,23 +486,28 @@
                     id: doc.id,
                     ...doc.data()
                 }));
-                // Sort by createdAt (Date.now() numbers)
+                // Sort by creation date (newest first)
                 loadedPhotos.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 photos = loadedPhotos;
                 renderGallery();
             }, (error) => {
                 console.error("Error reading photos:", error);
-                // Only show this error if it's NOT a permission error in Preview (avoids spamming)
                 if (error.code !== 'permission-denied') {
-                    showNotification("Gallery Sync Error: " + error.message, 'warning');
+                    showNotification("Gallery sync error: " + error.message, 'warning');
                 }
             });
         };
 
-        // ================= UPLOAD LOGIC =================
+        // ============================================================
+        // Upload Modal Logic
+        // ============================================================
+        
+        /**
+         * Handles file selection, compression, and preview.
+         */
         const handleFileSelect = async (file) => {
             if (!file || !file.type.startsWith('image/')) {
-                alert("Please select image files only.");
+                alert("Please select an image file.");
                 return;
             }
             
@@ -515,6 +532,9 @@
             reader.readAsDataURL(file);
         };
 
+        /**
+         * Resets the upload form to its initial state.
+         */
         const resetUploadUI = () => {
             uploadImageData = '';
             fileInput.value = '';
@@ -527,10 +547,14 @@
             submitUploadBtn.disabled = true;
         };
 
+        /**
+         * Enables or disables the submit button based on form validity.
+         */
         const checkUploadValidity = () => {
             submitUploadBtn.disabled = !(uploadImageData && captionInput.value.trim());
         };
 
+        // Event listeners for upload modal
         document.getElementById('open-upload-btn').addEventListener('click', () => uploadModal.classList.remove('hidden-force'));
         document.getElementById('close-upload-btn').addEventListener('click', () => { uploadModal.classList.add('hidden-force'); resetUploadUI(); });
         dropZone.addEventListener('click', () => { if(!uploadImageData) fileInput.click(); });
@@ -538,6 +562,7 @@
         document.getElementById('clear-image-btn').addEventListener('click', (e) => { e.stopPropagation(); resetUploadUI(); });
         captionInput.addEventListener('input', (e) => { document.getElementById('char-count').innerText = e.target.value.length; checkUploadValidity(); });
 
+        // Upload form submission
         uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser || !uploadImageData) return;
@@ -552,7 +577,8 @@
                     caption: captionInput.value,
                     author: getAuthorFromEmail(currentUser.email),
                     userId: currentUser.uid, 
-                    createdAt: Date.now(), // Changed back to Date.now() for better compatibility
+                    createdAt: Date.now(),
+                    // Random slight rotation for a playful effect
                     rotation: Math.floor(Math.random() * 6) - 3
                 });
 
@@ -561,14 +587,15 @@
                 showNotification('Memory added successfully!', 'success');
             } catch (error) {
                 console.error(error);
-                // DETAILED ERROR ALERT for debugging
-                alert(`Upload Failed!\nCode: ${error.code}\nMessage: ${error.message}\nCheck Firebase Console > Firestore Rules if using custom backend.`);
+                alert(`Upload failed!\nCode: ${error.code}\nMessage: ${error.message}\nPlease check your Firestore rules.`);
             } finally {
                 submitUploadBtn.innerHTML = originalBtnText;
             }
         });
 
-        // ================= DELETE LOGIC =================
+        // ============================================================
+        // Delete Modal Logic
+        // ============================================================
         document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
             if (!currentPhotoIdToDelete) return;
             
@@ -582,7 +609,7 @@
                 showNotification('Memory deleted.', 'success');
             } catch (error) {
                 console.error(error);
-                alert("Could not delete. Check if you are the owner.");
+                alert("Could not delete. Make sure you are the owner.");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'Yes, delete';
@@ -595,6 +622,9 @@
             currentPhotoIdToDelete = null;
         });
 
+        // ============================================================
+        // Fullscreen Viewer
+        // ============================================================
         document.getElementById('close-fullscreen-btn').addEventListener('click', () => {
             fullscreenViewer.classList.add('hidden-force');
         });
