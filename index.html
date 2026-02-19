@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <!-- Viewport ajustado para evitar zoom e garantir escala correta -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LPCUWC Secret Gallery</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -10,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
         h1, h2, h3, .font-poppins { font-family: 'Poppins', sans-serif; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -27,63 +28,48 @@
         .hidden-force { display: none !important; }
         .break-inside-avoid { break-inside: avoid; }
 
-        /* Mobile optimizations */
+        /* Ajustes para fotos da galeria em mobile */
         @media (max-width: 640px) {
-            .gallery-grid {
-                columns: 1 !important;
-                gap: 1rem !important;
-            }
-            .gallery-item {
+            #gallery-grid > div {
                 margin-bottom: 1rem !important;
             }
-            .photo-card {
-                padding: 0.5rem !important;
+            .gallery-image {
+                max-height: 50vh;
+                object-fit: cover;
             }
-            .photo-caption {
-                font-size: 1rem !important;
-                padding: 0.75rem !important;
-            }
-            .header-title {
-                font-size: 1.25rem !important;
-            }
-            .add-photo-btn {
-                padding: 0.5rem 1rem !important;
-                font-size: 0.875rem !important;
-            }
-            .modal-content {
-                margin: 0 1rem !important;
-                padding: 1.5rem !important;
-            }
-            .upload-dropzone {
-                height: 12rem !important;
-            }
+        }
+
+        /* Garantir que imagens não estourem o container */
+        img {
+            max-width: 100%;
+            height: auto;
         }
     </style>
 </head>
 <body class="bg-[#f3f4f6] min-h-screen selection:bg-pink-300 selection:text-pink-900 overflow-x-hidden">
 
-    <div id="notification-container" class="fixed top-4 left-0 right-0 z-50 flex flex-col items-center gap-2 pointer-events-none px-4"></div>
+    <div id="notification-container" class="fixed top-4 left-0 right-0 z-50 flex flex-col items-center gap-2 pointer-events-none"></div>
 
     <!-- LOGIN SCREEN -->
     <div id="login-screen" class="min-h-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
         <div class="absolute -top-40 -left-40 w-96 h-96 bg-purple-600 rounded-full blur-[128px] opacity-40 pointer-events-none blob-1"></div>
         <div class="absolute top-1/2 -right-40 w-80 h-80 bg-pink-500 rounded-full blur-[100px] opacity-40 pointer-events-none blob-2"></div>
 
-        <div class="z-10 w-full max-w-md animate-enter px-4">
-            <div class="bg-gray-900/80 backdrop-blur-xl border border-gray-800 rounded-3xl p-6 md:p-8 shadow-2xl">
-                <div class="text-center mb-6 md:mb-8">
-                    <h1 class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-2 tracking-tighter">LPCUWC</h1>
-                    <p class="text-gray-400 text-xs md:text-sm font-medium tracking-wide">SECRET GALLERY</p>
+        <div class="z-10 w-full max-w-md animate-enter">
+            <div class="bg-gray-900/80 backdrop-blur-xl border border-gray-800 rounded-3xl p-8 shadow-2xl">
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-2 tracking-tighter">LPCUWC</h1>
+                    <p class="text-gray-400 text-sm font-medium tracking-wide">SECRET GALLERY</p>
                     <p id="preview-badge" class="hidden-force text-xs bg-yellow-500/20 text-yellow-300 mt-2 py-1 px-3 rounded-full inline-block">Preview Mode (Auto-Login)</p>
                 </div>
 
                 <!-- Google Login (production mode) -->
                 <div id="google-login-container" class="hidden-force">
-                    <button id="google-login-btn" class="w-full bg-white hover:bg-gray-100 text-black font-bold py-3 md:py-4 px-4 rounded-xl transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm md:text-base">
-                        <i data-lucide="mail" class="w-4 h-4 md:w-5 md:h-5"></i>
-                        <span>Sign in with Google</span>
-                    </button>
-                    <p class="text-gray-500 text-xs text-center mt-3 md:mt-4">USE YOUR SCHOOL ACCOUNT</p>
+                <button id="google-login-btn" class="w-full bg-white hover:bg-gray-100 text-black font-bold py-4 rounded-xl transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 whitespace-nowrap leading-none text-sm md:text-base">
+                    <i data-lucide="mail" class="w-5 h-5"></i>
+                    <span>Sign in with Google</span>
+                </button>
+                    <p class="text-gray-500 text-xs text-center mt-4">USE YOUR SCHOOL ACCOUNT</p>
                 </div>
 
                 <!-- Preview mode info (anonymous mode) -->
@@ -97,96 +83,99 @@
 
     <!-- APP SCREEN -->
     <div id="app-screen" class="hidden-force">
-        <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+        <!-- Cabeçalho adaptado para mobile -->
+        <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <div class="w-7 h-7 md:w-8 md:h-8 bg-black rounded-lg flex items-center justify-center text-white"><i data-lucide="camera" class="w-3.5 h-3.5 md:w-4 md:h-4"></i></div>
-                <span class="font-black text-lg md:text-xl tracking-tighter header-title">LPCUWC<span class="text-purple-600">.GALLERY</span></span>
+                <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white"><i data-lucide="camera" class="w-4 h-4"></i></div>
+                <span class="font-black text-lg sm:text-xl tracking-tighter">LPCUWC<span class="text-purple-600">.GALLERY</span></span>
             </div>
-            <div class="flex items-center gap-2 md:gap-4">
-                <button id="logout-btn" class="text-gray-500 hover:text-black font-medium text-xs md:text-sm transition-colors px-2">Logout</button>
-                <button id="open-upload-btn" class="bg-black hover:bg-gray-800 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-full font-bold text-xs md:text-sm transition-all transform hover:scale-105 shadow-lg flex items-center gap-1 md:gap-2 add-photo-btn">
-                    <i data-lucide="plus" class="w-3.5 h-3.5 md:w-4 md:h-4"></i> <span class="hidden xs:inline">Add Photo</span>
+            <div class="flex items-center gap-2 sm:gap-4">
+                <button id="logout-btn" class="text-gray-500 hover:text-black font-medium text-xs sm:text-sm transition-colors px-2 py-1 sm:px-0 sm:py-0">Logout</button>
+                <!-- Botão Add Photo: no celular apenas ícone, no desktop ícone + texto -->
+                <button id="open-upload-btn" class="bg-black hover:bg-gray-800 text-white rounded-full font-bold transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-1 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Add Photo</span>
                 </button>
             </div>
         </header>
 
-        <main class="max-w-7xl mx-auto p-3 md:p-8">
-            <div id="gallery-grid" class="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6 pb-16 md:pb-20 gallery-grid"></div>
+        <main class="max-w-7xl mx-auto p-3 sm:p-4 md:p-8">
+            <div id="gallery-grid" class="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 sm:gap-6 space-y-4 sm:space-y-6 pb-20"></div>
             
-            <div id="empty-state" class="text-center py-12 md:py-20 opacity-50 hidden-force">
-                <p class="text-lg md:text-xl font-bold">The gallery is empty.</p>
-                <p class="text-sm md:text-base">Be the first to post a memory!</p>
+            <div id="empty-state" class="text-center py-20 opacity-50 hidden-force">
+                <p class="text-xl font-bold">The gallery is empty.</p>
+                <p>Be the first to post a memory!</p>
             </div>
         </main>
     </div>
 
-    <!-- UPLOAD MODAL -->
-    <div id="upload-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-black/80 backdrop-blur-sm hidden-force animate-enter">
-        <div class="bg-white rounded-2xl md:rounded-3xl w-full max-w-lg p-5 md:p-6 relative overflow-hidden flex flex-col max-h-[90vh] modal-content">
-            <button id="close-upload-btn" class="absolute top-3 right-3 md:top-4 md:right-4 p-1.5 md:p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors z-10">
-                <i data-lucide="x" class="w-4 h-4 md:w-5 md:h-5"></i>
+    <!-- UPLOAD MODAL (ajustado para mobile) -->
+    <div id="upload-modal" class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm hidden-force animate-enter">
+        <div class="bg-white rounded-3xl w-full max-w-lg p-4 sm:p-6 relative overflow-hidden flex flex-col max-h-[90vh]">
+            <button id="close-upload-btn" class="absolute top-2 sm:top-4 right-2 sm:right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors z-10">
+                <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <h2 class="text-xl md:text-2xl font-black mb-4 md:mb-6 text-gray-900">New Memory 📸</h2>
-            <form id="upload-form" class="space-y-3 md:space-y-4 flex-1 flex flex-col">
+            <h2 class="text-xl sm:text-2xl font-black mb-4 sm:mb-6 text-gray-900">New Memory 📸</h2>
+            <form id="upload-form" class="space-y-4 flex-1 flex flex-col">
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 md:mb-2">Your Photo</label>
-                    <div id="drop-zone" class="border-3 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-xl md:rounded-2xl h-40 md:h-48 flex flex-col items-center justify-center cursor-pointer transition-all upload-dropzone">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Your Photo</label>
+                    <div id="drop-zone" class="border-3 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-2xl h-40 sm:h-48 flex flex-col items-center justify-center cursor-pointer transition-all">
                         <input type="file" id="file-input" accept="image/*" class="hidden">
                         <div id="upload-placeholder" class="text-center">
-                            <div class="bg-gray-100 p-3 md:p-4 rounded-full mb-2 md:mb-3 inline-block">
-                                <i data-lucide="upload" class="w-5 h-5 md:w-6 md:h-6 text-gray-600"></i>
+                            <div class="bg-gray-100 p-3 sm:p-4 rounded-full mb-2 sm:mb-3 inline-block">
+                                <i data-lucide="upload" class="w-5 h-5 sm:w-6 sm:h-6 text-gray-600"></i>
                             </div>
-                            <p class="text-xs md:text-sm font-bold text-gray-600">Tap or drag</p>
+                            <p class="text-xs sm:text-sm font-bold text-gray-600">Tap or drag</p>
                         </div>
                         <div id="upload-loading" class="hidden-force flex flex-col items-center animate-pulse">
-                            <i data-lucide="sparkles" class="mb-2 text-purple-500 w-4 h-4 md:w-5 md:h-5"></i>
-                            <p class="text-xs md:text-sm font-bold text-gray-600">Compressing...</p>
+                            <i data-lucide="sparkles" class="mb-2 text-purple-500 w-5 h-5"></i>
+                            <p class="text-xs sm:text-sm font-bold text-gray-600">Compressing...</p>
                         </div>
-                        <div id="upload-preview-container" class="hidden-force relative w-full h-full rounded-xl md:rounded-2xl overflow-hidden group bg-black">
+                        <div id="upload-preview-container" class="hidden-force relative w-full h-full rounded-2xl overflow-hidden group bg-black">
                             <img id="upload-preview-img" src="" alt="Preview" class="w-full h-full object-contain">
-                            <button type="button" id="clear-image-btn" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-bold transition-opacity w-full text-sm md:text-base">
-                                <i data-lucide="x" class="w-3.5 h-3.5 md:w-4 mr-1 md:mr-2"></i> Change
+                            <button type="button" id="clear-image-btn" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-bold transition-opacity w-full">
+                                <i data-lucide="x" class="w-4 mr-2"></i> Change
                             </button>
                         </div>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 md:mb-2">Caption</label>
-                    <textarea id="caption-input" required maxLength="60" class="w-full bg-gray-50 border-2 border-gray-200 rounded-lg md:rounded-xl px-3 md:px-4 py-2 md:py-3 outline-none focus:border-black transition-colors resize-none h-20 md:h-24 text-base md:text-lg font-medium"></textarea>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Caption</label>
+                    <textarea id="caption-input" required maxLength="60" class="w-full bg-gray-50 border-2 border-gray-200 rounded-xl px-3 sm:px-4 py-2 sm:py-3 outline-none focus:border-black transition-colors resize-none h-20 sm:h-24 text-base sm:text-lg font-medium"></textarea>
                     <div class="text-right text-xs text-gray-400 mt-1"><span id="char-count">0</span>/60</div>
                 </div>
-                <button type="submit" id="submit-upload-btn" disabled class="w-full bg-black text-white font-bold py-3 md:py-4 rounded-lg md:rounded-xl hover:bg-gray-800 disabled:opacity-50 mt-auto disabled:cursor-not-allowed text-sm md:text-base">
+                <button type="submit" id="submit-upload-btn" disabled class="w-full bg-black text-white font-bold py-3 sm:py-4 rounded-xl hover:bg-gray-800 disabled:opacity-50 mt-auto disabled:cursor-not-allowed text-sm sm:text-base">
                     Post Memory
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- FULLSCREEN VIEWER -->
-    <div id="fullscreen-viewer" class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-3 md:p-4 backdrop-blur-sm hidden-force animate-enter">
-        <button id="close-fullscreen-btn" class="absolute top-3 right-3 md:top-4 md:right-4 text-white/70 hover:text-white p-1.5 md:p-2 rounded-full hover:bg-white/10 transition-all z-20">
-            <i data-lucide="x" class="w-6 h-6 md:w-8 md:h-8"></i>
+    <!-- FULLSCREEN VIEWER (ajustado para mobile) -->
+    <div id="fullscreen-viewer" class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm hidden-force animate-enter">
+        <button id="close-fullscreen-btn" class="absolute top-2 sm:top-4 right-2 sm:right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all z-20">
+            <i data-lucide="x" class="w-6 sm:w-8 h-6 sm:h-8"></i>
         </button>
         <div class="relative max-w-5xl max-h-[85vh] w-full flex flex-col items-center" id="fullscreen-content">
-            <img id="fullscreen-img" src="" alt="" class="max-w-full max-h-[70vh] md:max-h-[80vh] object-contain rounded-lg shadow-2xl">
-            <div class="mt-4 md:mt-6 text-center text-white px-2">
-                <p id="fullscreen-caption" class="text-lg md:text-2xl font-bold font-poppins tracking-tight"></p>
-                <div class="flex items-center justify-center gap-2 mt-1 md:mt-2 opacity-60">
-                    <span id="fullscreen-author" class="text-xs md:text-sm font-mono"></span>
+            <img id="fullscreen-img" src="" alt="" class="max-w-full max-h-[60vh] sm:max-h-[80vh] object-contain rounded-lg shadow-2xl">
+            <div class="mt-4 sm:mt-6 text-center text-white px-2">
+                <p id="fullscreen-caption" class="text-lg sm:text-2xl font-bold font-poppins tracking-tight"></p>
+                <div class="flex items-center justify-center gap-2 mt-1 sm:mt-2 opacity-60">
+                    <span id="fullscreen-author" class="text-xs sm:text-sm font-mono"></span>
                     <i data-lucide="sparkles" class="text-yellow-500 w-3 h-3"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- DELETE MODAL -->
+    <!-- DELETE MODAL (ajustado para mobile) -->
     <div id="delete-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden-force">
-        <div class="bg-white rounded-xl md:rounded-2xl p-5 md:p-6 max-w-sm w-full shadow-2xl animate-enter mx-4">
-            <h3 class="text-lg md:text-xl font-bold mb-2">Delete memory?</h3>
-            <p class="text-sm md:text-base text-gray-500 mb-5 md:mb-6">This action cannot be undone. The photo will disappear for everyone.</p>
-            <div class="flex gap-2 md:gap-3 justify-end">
-                <button id="cancel-delete-btn" class="px-3 md:px-4 py-2 text-sm md:text-base text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Cancel</button>
-                <button id="confirm-delete-btn" class="px-3 md:px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 flex items-center gap-2 text-sm md:text-base">
+        <div class="bg-white rounded-2xl p-5 sm:p-6 max-w-sm w-full shadow-2xl animate-enter mx-4">
+            <h3 class="text-lg sm:text-xl font-bold mb-2">Delete memory?</h3>
+            <p class="text-gray-500 text-sm sm:text-base mb-6">This action cannot be undone. The photo will disappear for everyone.</p>
+            <div class="flex gap-3 justify-end">
+                <button id="cancel-delete-btn" class="px-3 sm:px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg text-sm sm:text-base">Cancel</button>
+                <button id="confirm-delete-btn" class="px-3 sm:px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 flex items-center gap-2 text-sm sm:text-base">
                     Yes, delete
                 </button>
             </div>
@@ -305,7 +294,7 @@
         /**
          * Compresses a base64 image to reduce file size.
          */
-        const compressImage = (base64Str, maxWidth = 600, quality = 0.7) => { 
+        const compressImage = (base64Str, maxWidth = 800, quality = 0.7) => { 
             return new Promise((resolve) => {
                 const img = new Image();
                 img.src = base64Str;
@@ -334,8 +323,8 @@
             const bgClass = type === 'error' ? 'bg-red-500/90' : type === 'warning' ? 'bg-orange-500/90' : 'bg-indigo-600/90';
             const icon = type === 'error' ? 'alert-circle' : 'mail';
             
-            el.className = `px-4 md:px-6 py-2 md:py-3 rounded-full shadow-xl flex items-center gap-2 md:gap-3 backdrop-blur-md border border-white/20 text-white font-medium text-xs md:text-sm animate-enter pointer-events-auto ${bgClass}`;
-            el.innerHTML = `<i data-lucide="${icon}" class="w-3.5 h-3.5 md:w-4 md:h-4"></i> <span>${message}</span>`;
+            el.className = `px-6 py-3 rounded-full shadow-xl flex items-center gap-3 backdrop-blur-md border border-white/20 text-white font-medium text-sm animate-enter pointer-events-auto ${bgClass}`;
+            el.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i> <span>${message}</span>`;
             
             notificationContainer.appendChild(el);
             lucide.createIcons();
@@ -447,36 +436,36 @@
 
             photos.forEach(photo => {
                 const card = document.createElement('div');
-                card.className = 'relative group cursor-pointer break-inside-avoid mb-4 md:mb-8 animate-enter gallery-item';
+                card.className = 'relative group cursor-pointer break-inside-avoid mb-4 sm:mb-8 animate-enter';
                 
                 // Only allow deletion if the current user is the owner
                 const isOwner = currentUser && photo.userId === currentUser.uid;
                 
                 const deleteButtonHTML = isOwner ? `
-                    <button class="delete-btn bg-white/20 hover:bg-red-500/80 text-white p-1.5 md:p-2 rounded-full transition-all backdrop-blur-sm" data-id="${photo.id}">
-                        <i data-lucide="trash-2" class="w-4 h-4 md:w-5 md:h-5 pointer-events-none"></i>
+                    <button class="delete-btn bg-white/20 hover:bg-red-500/80 text-white p-2 rounded-full transition-all backdrop-blur-sm" data-id="${photo.id}">
+                        <i data-lucide="trash-2" class="w-5 h-5 pointer-events-none"></i>
                     </button>
                 ` : '';
 
                 card.innerHTML = `
-                    <div class="relative overflow-hidden rounded-xl md:rounded-2xl shadow-lg bg-white p-1.5 md:p-2 pb-8 md:pb-12 transition-all duration-300 transform hover:scale-105 hover:z-10 photo-card" style="transform: rotate(${photo.rotation}deg)">
-                        <div class="relative overflow-hidden rounded-lg md:rounded-xl bg-gray-100">
-                             <img src="${photo.url}" alt="${photo.caption}" class="w-full h-auto block" loading="lazy">
+                    <div class="relative overflow-hidden rounded-2xl shadow-lg bg-white p-2 pb-12 transition-all duration-300 transform hover:scale-105 hover:z-10" style="transform: rotate(${photo.rotation}deg)">
+                        <div class="relative overflow-hidden rounded-xl bg-gray-100">
+                             <img src="${photo.url}" alt="${photo.caption}" class="w-full h-auto block gallery-image">
                              
-                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-pink-600/80 to-transparent flex flex-col justify-end p-3 md:p-6 text-white text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <p class="font-bold text-sm md:text-xl leading-tight font-poppins translate-y-4 group-hover:translate-y-0 transition-transform duration-300 photo-caption">"${photo.caption}"</p>
+                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-pink-600/80 to-transparent flex flex-col justify-end p-4 sm:p-6 text-white text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <p class="font-bold text-base sm:text-xl leading-tight font-poppins translate-y-4 group-hover:translate-y-0 transition-transform duration-300">"${photo.caption}"</p>
                                 
-                                <div class="flex gap-2 md:gap-4 justify-center mt-2 md:mt-4">
-                                    <button class="view-btn bg-white/20 hover:bg-white/40 text-white p-1.5 md:p-2 rounded-full transition-all backdrop-blur-sm" data-id="${photo.id}">
-                                        <i data-lucide="maximize-2" class="w-4 h-4 md:w-5 md:h-5 pointer-events-none"></i>
+                                <div class="flex gap-4 justify-center mt-4">
+                                    <button class="view-btn bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-all backdrop-blur-sm" data-id="${photo.id}">
+                                        <i data-lucide="maximize-2" class="w-5 h-5 pointer-events-none"></i>
                                     </button>
                                     ${deleteButtonHTML}
                                 </div>
                              </div>
                         </div>
-                        <div class="absolute bottom-2 md:bottom-3 left-2 md:left-4 right-2 md:right-4 flex justify-between items-center opacity-60">
+                        <div class="absolute bottom-3 left-4 right-4 flex justify-between items-center opacity-60">
                              <span class="text-xs font-mono font-bold text-gray-500">@${photo.author || 'Anonymous'}</span>
-                             <i data-lucide="sparkles" class="text-yellow-500 w-2.5 h-2.5 md:w-3 md:h-3"></i>
+                             <i data-lucide="sparkles" class="text-yellow-500 w-3 h-3"></i>
                         </div>
                     </div>
                 `;
@@ -600,7 +589,7 @@
             if (!currentUser || !uploadImageData) return;
 
             const originalBtnText = submitUploadBtn.innerHTML;
-            submitUploadBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 md:w-5 md:h-5 animate-spin"></i> Saving...';
+            submitUploadBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Saving...';
             submitUploadBtn.disabled = true;
 
             try {
@@ -633,7 +622,7 @@
             
             const btn = document.getElementById('confirm-delete-btn');
             btn.disabled = true;
-            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 md:w-5 md:h-5 animate-spin"></i> Deleting...';
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Deleting...';
 
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'photos', currentPhotoIdToDelete));
