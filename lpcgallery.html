@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LPCUWC Secret Gallery</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .font-poppins { font-family: 'Poppins', sans-serif; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.9); } }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes spin-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        
+        .animate-enter { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-exit { animation: fadeOut 0.3s ease-in forwards; }
+        
+        .blob-1 { animation: spin-slow 20s linear infinite; }
+        .blob-2 { animation: spin-reverse 25s linear infinite; }
+
+        .hidden-force { display: none !important; }
+        .break-inside-avoid { break-inside: avoid; }
+    </style>
+</head>
+<body class="bg-[#f3f4f6] min-h-screen selection:bg-pink-300 selection:text-pink-900 overflow-x-hidden">
+
+    <div id="notification-container" class="fixed top-4 left-0 right-0 z-50 flex flex-col items-center gap-2 pointer-events-none"></div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="min-h-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-purple-600 rounded-full blur-[128px] opacity-40 pointer-events-none blob-1"></div>
+        <div class="absolute top-1/2 -right-40 w-80 h-80 bg-pink-500 rounded-full blur-[100px] opacity-40 pointer-events-none blob-2"></div>
+
+        <div class="z-10 w-full max-w-md animate-enter">
+            <div class="bg-gray-900/80 backdrop-blur-xl border border-gray-800 rounded-3xl p-8 shadow-2xl">
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-2 tracking-tighter">LPCUWC</h1>
+                    <p class="text-gray-400 text-sm font-medium tracking-wide">SECRET GALLERY</p>
+                    <p id="preview-badge" class="hidden-force text-xs bg-yellow-500/20 text-yellow-300 mt-2 py-1 px-3 rounded-full inline-block">Preview Mode (Auto-Login)</p>
+                </div>
+
+                <form id="email-form" class="space-y-4">
+                    <div>
+                        <label class="text-gray-400 text-xs font-bold ml-2 mb-1 block uppercase">Institutional Email</label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5"></i>
+                            <input type="email" id="email-input" required placeholder="your.name27@lpcuwc.edu.hk" class="w-full bg-gray-800/50 border border-gray-700 focus:border-purple-500 text-white rounded-xl py-4 pl-12 pr-4 outline-none transition-all placeholder:text-gray-600 font-medium">
+                        </div>
+                    </div>
+                    <button type="submit" id="email-btn" class="w-full bg-white hover:bg-gray-100 text-black font-bold py-4 rounded-xl transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                        <span>Get Magic Link</span> <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    </button>
+                </form>
+
+                <div id="link-sent-message" class="hidden-force text-center space-y-4">
+                    <div class="bg-purple-900/40 p-6 rounded-2xl border border-purple-500/30">
+                        <i data-lucide="mail-check" class="w-12 h-12 text-pink-400 mx-auto mb-3"></i>
+                        <h3 class="text-white font-bold text-lg mb-2">Check your email!</h3>
+                        <p class="text-gray-300 text-sm">We sent a secure login link to <br><span id="sent-email-display" class="font-bold text-white"></span>.</p>
+                        <p class="text-gray-400 text-xs mt-4">Click the link to enter automatically.</p>
+                    </div>
+                    <button type="button" id="resend-btn" class="w-full text-gray-500 text-xs hover:text-white transition-colors flex items-center justify-center gap-1 mt-4">
+                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> Use a different email
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP SCREEN -->
+    <div id="app-screen" class="hidden-force">
+        <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white"><i data-lucide="camera" class="w-4 h-4"></i></div>
+                <span class="font-black text-xl tracking-tighter">LPCUWC<span class="text-purple-600">.GALLERY</span></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="logout-btn" class="text-gray-500 hover:text-black font-medium text-sm transition-colors">Logout</button>
+                <button id="open-upload-btn" class="bg-black hover:bg-gray-800 text-white px-5 py-2.5 rounded-full font-bold text-sm transition-all transform hover:scale-105 shadow-lg flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add Photo
+                </button>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto p-4 md:p-8">
+            <div id="gallery-grid" class="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6 pb-20"></div>
+            
+            <div id="empty-state" class="text-center py-20 opacity-50 hidden-force">
+                <p class="text-xl font-bold">The gallery is empty.</p>
+                <p>Be the first to post a memory!</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- UPLOAD MODAL -->
+    <div id="upload-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden-force animate-enter">
+        <div class="bg-white rounded-3xl w-full max-w-lg p-6 relative overflow-hidden flex flex-col max-h-[90vh]">
+            <button id="close-upload-btn" class="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors z-10">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <h2 class="text-2xl font-black mb-6 text-gray-900">New Memory 📸</h2>
+            <form id="upload-form" class="space-y-4 flex-1 flex flex-col">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Your Photo</label>
+                    <div id="drop-zone" class="border-3 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-2xl h-48 flex flex-col items-center justify-center cursor-pointer transition-all">
+                        <input type="file" id="file-input" accept="image/*" class="hidden">
+                        <div id="upload-placeholder" class="text-center">
+                            <div class="bg-gray-100 p-4 rounded-full mb-3 inline-block">
+                                <i data-lucide="upload" class="w-6 h-6 text-gray-600"></i>
+                            </div>
+                            <p class="text-sm font-bold text-gray-600">Tap or drag</p>
+                        </div>
+                        <div id="upload-loading" class="hidden-force flex flex-col items-center animate-pulse">
+                            <i data-lucide="sparkles" class="mb-2 text-purple-500 w-5 h-5"></i>
+                            <p class="text-sm font-bold text-gray-600">Compressing...</p>
+                        </div>
+                        <div id="upload-preview-container" class="hidden-force relative w-full h-full rounded-2xl overflow-hidden group bg-black">
+                            <img id="upload-preview-img" src="" alt="Preview" class="w-full h-full object-contain">
+                            <button type="button" id="clear-image-btn" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-bold transition-opacity w-full">
+                                <i data-lucide="x" class="w-4 h-4 mr-2"></i> Change
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Caption</label>
+                    <textarea id="caption-input" required maxLength="60" class="w-full bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-black transition-colors resize-none h-24 text-lg font-medium"></textarea>
+                    <div class="text-right text-xs text-gray-400 mt-1"><span id="char-count">0</span>/60</div>
+                </div>
+                <button type="submit" id="submit-upload-btn" disabled class="w-full bg-black text-white font-bold py-4 rounded-xl hover:bg-gray-800 disabled:opacity-50 mt-auto disabled:cursor-not-allowed">
+                    Post Memory
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FULLSCREEN VIEWER -->
+    <div id="fullscreen-viewer" class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm hidden-force animate-enter">
+        <button id="close-fullscreen-btn" class="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all z-20">
+            <i data-lucide="x" class="w-8 h-8"></i>
+        </button>
+        <div class="relative max-w-5xl max-h-[85vh] w-full flex flex-col items-center" id="fullscreen-content">
+            <img id="fullscreen-img" src="" alt="" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl">
+            <div class="mt-6 text-center text-white">
+                <p id="fullscreen-caption" class="text-2xl font-bold font-poppins tracking-tight"></p>
+                <div class="flex items-center justify-center gap-2 mt-2 opacity-60">
+                    <span id="fullscreen-author" class="text-sm font-mono"></span>
+                    <i data-lucide="sparkles" class="text-yellow-500 w-3 h-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE MODAL -->
+    <div id="delete-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden-force">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-enter">
+            <h3 class="text-xl font-bold mb-2">Delete memory?</h3>
+            <p class="text-gray-500 mb-6">This action cannot be undone. The photo will disappear for everyone.</p>
+            <div class="flex gap-3 justify-end">
+                <button id="cancel-delete-btn" class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Cancel</button>
+                <button id="confirm-delete-btn" class="px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 flex items-center gap-2">
+                    Yes, delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ================= CONFIGURATION & DUAL MODE =================
+        
+        // 1. User Config (For Production/Export)
+        const userConfig = {
+            apiKey: "AIzaSyDw2HOL1uAgeTv8b9L1leXZ94tMpm36pOo",
+            authDomain: "lpcgallery-a45bf.firebaseapp.com",
+            projectId: "lpcgallery-a45bf",
+            storageBucket: "lpcgallery-a45bf.firebasestorage.app",
+            messagingSenderId: "820112584664",
+            appId: "1:820112584664:web:94dc261369e2ab003e8cad",
+            measurementId: "G-KZ3LHTLKFP"
+        };
+        const userAppIdPath = 'lpcgallery-production';
+
+        // 2. Detection Logic
+        // If __firebase_config exists, we are in the Preview Environment.
+        // We MUST use the environment config for the database to work here.
+        const isPreview = typeof __firebase_config !== 'undefined';
+        
+        const firebaseConfig = isPreview ? JSON.parse(__firebase_config) : userConfig;
+        const appId = isPreview ? (typeof __app_id !== 'undefined' ? __app_id : 'default') : userAppIdPath;
+
+        // Initialize
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        if (isPreview) {
+            console.log("🛠️ Running in Preview Mode: Using Environment Config & Anonymous Auth");
+            document.getElementById('preview-badge').classList.remove('hidden-force');
+        }
+
+        // ================= STATE & GLOBALS =================
+        let currentUser = null;
+        let currentPhotoIdToDelete = null;
+        let photos = [];
+        let uploadImageData = '';
+
+        // ================= DOM ELEMENTS =================
+        const loginScreen = document.getElementById('login-screen');
+        const appScreen = document.getElementById('app-screen');
+        const uploadModal = document.getElementById('upload-modal');
+        const fullscreenViewer = document.getElementById('fullscreen-viewer');
+        const deleteModal = document.getElementById('delete-modal');
+        const notificationContainer = document.getElementById('notification-container');
+        
+        const emailForm = document.getElementById('email-form');
+        const emailInput = document.getElementById('email-input');
+        const linkSentMessage = document.getElementById('link-sent-message');
+        const uploadForm = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-input');
+        const captionInput = document.getElementById('caption-input');
+        
+        const dropZone = document.getElementById('drop-zone');
+        const uploadPlaceholder = document.getElementById('upload-placeholder');
+        const uploadLoading = document.getElementById('upload-loading');
+        const uploadPreviewContainer = document.getElementById('upload-preview-container');
+        const uploadPreviewImg = document.getElementById('upload-preview-img');
+        const submitUploadBtn = document.getElementById('submit-upload-btn');
+        const galleryGrid = document.getElementById('gallery-grid');
+        const emptyState = document.getElementById('empty-state');
+
+        // ================= UTILITIES =================
+        const getAuthorFromEmail = (email) => {
+            if (!email) return 'Anonymous';
+            try {
+                const localPart = email.split('@')[0];
+                const match = localPart.match(/^(.+?)(\d+)$/);
+                if (match) {
+                    let nameText = match[1].replace(/[._]/g, ' ');
+                    nameText = nameText.replace(/\b\w/g, l => l.toUpperCase());
+                    const year = match[2];
+                    return `${nameText} ${year}`;
+                }
+                return localPart.charAt(0).toUpperCase() + localPart.slice(1);
+            } catch (e) {
+                return 'Anonymous';
+            }
+        };
+
+        const compressImage = (base64Str, maxWidth = 800, quality = 0.7) => { 
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = base64Str;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxWidth) {
+                        height = (height * maxWidth) / width;
+                        width = maxWidth;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+            });
+        };
+
+        const showNotification = (message, type = 'info') => {
+            const el = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-red-500/90' : type === 'warning' ? 'bg-orange-500/90' : 'bg-indigo-600/90';
+            const icon = type === 'error' ? 'alert-circle' : 'mail';
+            
+            el.className = `px-6 py-3 rounded-full shadow-xl flex items-center gap-3 backdrop-blur-md border border-white/20 text-white font-medium text-sm animate-enter pointer-events-auto ${bgClass}`;
+            el.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i> <span>${message}</span>`;
+            
+            notificationContainer.appendChild(el);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                el.classList.add('animate-exit');
+                setTimeout(() => el.remove(), 300);
+            }, 4000);
+        };
+
+        // ================= AUTHENTICATION LOGIC =================
+        
+        const initAuth = async () => {
+            if (isPreview) {
+                // In Preview Mode, we force Anonymous Auth because Magic Link 
+                // requires specific domain whitelisting that the preview environment lacks.
+                try {
+                    await signInAnonymously(auth);
+                } catch (error) {
+                    console.error("Anon auth failed", error);
+                    showNotification("Preview Auth Error: " + error.message, "error");
+                }
+            } else {
+                // In Production (User Config), we check for Magic Link
+                if (isSignInWithEmailLink(auth, window.location.href)) {
+                    let email = window.localStorage.getItem('emailForSignIn');
+                    if (!email) {
+                        email = window.prompt('Please confirm your email:');
+                    }
+                    try {
+                        await signInWithEmailLink(auth, email, window.location.href);
+                        window.localStorage.removeItem('emailForSignIn');
+                        window.history.replaceState(null, '', window.location.pathname);
+                    } catch (error) {
+                        showNotification('Invalid or expired link.', 'error');
+                    }
+                }
+            }
+        };
+
+        initAuth();
+        
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loginScreen.classList.add('hidden-force');
+                appScreen.classList.remove('hidden-force');
+                initGallery();
+                if (isPreview) showNotification("Connected to Preview Database", "success");
+            } else {
+                currentUser = null;
+                loginScreen.classList.remove('hidden-force');
+                appScreen.classList.add('hidden-force');
+                emailForm.classList.remove('hidden-force');
+                linkSentMessage.classList.add('hidden-force');
+            }
+        });
+
+        // Email Form Submit (Only used in Production/Export)
+        emailForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isPreview) return; // Should not happen as logic skips this, but safety first
+
+            const email = emailInput.value.trim();
+            const isStudentEmail = /\d@lpcuwc\.edu\.hk$/i.test(email);
+
+            if (isStudentEmail || email.endsWith('@lpcuwc.edu.hk')) {
+                const btn = document.getElementById('email-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sending...';
+                btn.disabled = true;
+
+                const actionCodeSettings = {
+                    url: window.location.origin + window.location.pathname,
+                    handleCodeInApp: true,
+                };
+
+                try {
+                    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+                    window.localStorage.setItem('emailForSignIn', email);
+                    
+                    emailForm.classList.add('hidden-force');
+                    document.getElementById('sent-email-display').innerText = email;
+                    linkSentMessage.classList.remove('hidden-force');
+                    showNotification(`Magic Link sent!`, 'success');
+                } catch (error) {
+                    showNotification(`Error: ${error.message}`, 'error');
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } else {
+                showNotification('Access denied. Use @lpcuwc.edu.hk', 'error');
+            }
+        });
+
+        document.getElementById('resend-btn').addEventListener('click', () => {
+            linkSentMessage.classList.add('hidden-force');
+            emailForm.classList.remove('hidden-force');
+            emailInput.value = '';
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        // ================= GALLERY LOGIC =================
+        const renderGallery = () => {
+            galleryGrid.innerHTML = '';
+            
+            if (photos.length === 0) {
+                emptyState.classList.remove('hidden-force');
+                return;
+            } else {
+                emptyState.classList.add('hidden-force');
+            }
+
+            photos.forEach(photo => {
+                const card = document.createElement('div');
+                card.className = 'relative group cursor-pointer break-inside-avoid mb-8 animate-enter';
+                
+                // Permission Check for Deletion:
+                // In Preview mode (Anonymous), everyone is effectively 'Anonymous', 
+                // so we allow deletion if IDs match (which they will if same session) OR just hide it.
+                // For simplicity, we compare IDs.
+                const isOwner = currentUser && photo.userId === currentUser.uid;
+                
+                const deleteButtonHTML = isOwner ? `
+                    <button class="delete-btn bg-white/20 hover:bg-red-500/80 text-white p-2 rounded-full transition-all backdrop-blur-sm" data-id="${photo.id}">
+                        <i data-lucide="trash-2" class="w-5 h-5 pointer-events-none"></i>
+                    </button>
+                ` : '';
+
+                card.innerHTML = `
+                    <div class="relative overflow-hidden rounded-2xl shadow-lg bg-white p-2 pb-12 transition-all duration-300 transform hover:scale-105 hover:z-10" style="transform: rotate(${photo.rotation}deg)">
+                        <div class="relative overflow-hidden rounded-xl bg-gray-100">
+                             <img src="${photo.url}" alt="${photo.caption}" class="w-full h-auto block">
+                             
+                             <div class="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-pink-600/80 to-transparent flex flex-col justify-end p-6 text-white text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <p class="font-bold text-xl leading-tight font-poppins translate-y-4 group-hover:translate-y-0 transition-transform duration-300">"${photo.caption}"</p>
+                                
+                                <div class="flex gap-4 justify-center mt-4">
+                                    <button class="view-btn bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-all backdrop-blur-sm" data-id="${photo.id}">
+                                        <i data-lucide="maximize-2" class="w-5 h-5 pointer-events-none"></i>
+                                    </button>
+                                    ${deleteButtonHTML}
+                                </div>
+                             </div>
+                        </div>
+                        <div class="absolute bottom-3 left-4 right-4 flex justify-between items-center opacity-60">
+                             <span class="text-xs font-mono font-bold text-gray-500">@${photo.author || 'Anonymous'}</span>
+                             <i data-lucide="sparkles" class="text-yellow-500 w-3 h-3"></i>
+                        </div>
+                    </div>
+                `;
+                
+                // Event Listeners for buttons
+                card.querySelector('.view-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.getElementById('fullscreen-img').src = photo.url;
+                    document.getElementById('fullscreen-caption').innerText = `"${photo.caption}"`;
+                    document.getElementById('fullscreen-author').innerText = `@${photo.author || 'Anonymous'}`;
+                    fullscreenViewer.classList.remove('hidden-force');
+                });
+
+                const delBtn = card.querySelector('.delete-btn');
+                if (delBtn) {
+                    delBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        currentPhotoIdToDelete = photo.id;
+                        deleteModal.classList.remove('hidden-force');
+                    });
+                }
+                
+                galleryGrid.appendChild(card);
+            });
+            lucide.createIcons();
+        };
+
+        const initGallery = () => {
+            if (!currentUser) return;
+            
+            // Critical Fix: Use dynamic appId path for Preview, static for Prod
+            const photosRef = collection(db, 'artifacts', appId, 'public', 'data', 'photos');
+            
+            onSnapshot(photosRef, (snapshot) => {
+                const loadedPhotos = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                // Sort by createdAt (Date.now() numbers)
+                loadedPhotos.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                photos = loadedPhotos;
+                renderGallery();
+            }, (error) => {
+                console.error("Error reading photos:", error);
+                // Only show this error if it's NOT a permission error in Preview (avoids spamming)
+                if (error.code !== 'permission-denied') {
+                    showNotification("Gallery Sync Error: " + error.message, 'warning');
+                }
+            });
+        };
+
+        // ================= UPLOAD LOGIC =================
+        const handleFileSelect = async (file) => {
+            if (!file || !file.type.startsWith('image/')) {
+                alert("Please select image files only.");
+                return;
+            }
+            
+            uploadPlaceholder.classList.add('hidden-force');
+            uploadPreviewContainer.classList.add('hidden-force');
+            uploadLoading.classList.remove('hidden-force');
+            
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                try {
+                    const compressedBase64 = await compressImage(reader.result);
+                    uploadImageData = compressedBase64;
+                    uploadLoading.classList.add('hidden-force');
+                    uploadPreviewImg.src = compressedBase64;
+                    uploadPreviewContainer.classList.remove('hidden-force');
+                    checkUploadValidity();
+                } catch (err) {
+                    alert("Error processing image.");
+                    resetUploadUI();
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        const resetUploadUI = () => {
+            uploadImageData = '';
+            fileInput.value = '';
+            captionInput.value = '';
+            document.getElementById('char-count').innerText = '0';
+            
+            uploadPlaceholder.classList.remove('hidden-force');
+            uploadLoading.classList.add('hidden-force');
+            uploadPreviewContainer.classList.add('hidden-force');
+            submitUploadBtn.disabled = true;
+        };
+
+        const checkUploadValidity = () => {
+            submitUploadBtn.disabled = !(uploadImageData && captionInput.value.trim());
+        };
+
+        document.getElementById('open-upload-btn').addEventListener('click', () => uploadModal.classList.remove('hidden-force'));
+        document.getElementById('close-upload-btn').addEventListener('click', () => { uploadModal.classList.add('hidden-force'); resetUploadUI(); });
+        dropZone.addEventListener('click', () => { if(!uploadImageData) fileInput.click(); });
+        fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+        document.getElementById('clear-image-btn').addEventListener('click', (e) => { e.stopPropagation(); resetUploadUI(); });
+        captionInput.addEventListener('input', (e) => { document.getElementById('char-count').innerText = e.target.value.length; checkUploadValidity(); });
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser || !uploadImageData) return;
+
+            const originalBtnText = submitUploadBtn.innerHTML;
+            submitUploadBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Saving...';
+            submitUploadBtn.disabled = true;
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'photos'), {
+                    url: uploadImageData,
+                    caption: captionInput.value,
+                    author: getAuthorFromEmail(currentUser.email),
+                    userId: currentUser.uid, 
+                    createdAt: Date.now(), // Changed back to Date.now() for better compatibility
+                    rotation: Math.floor(Math.random() * 6) - 3
+                });
+
+                uploadModal.classList.add('hidden-force');
+                resetUploadUI();
+                showNotification('Memory added successfully!', 'success');
+            } catch (error) {
+                console.error(error);
+                // DETAILED ERROR ALERT for debugging
+                alert(`Upload Failed!\nCode: ${error.code}\nMessage: ${error.message}\nCheck Firebase Console > Firestore Rules if using custom backend.`);
+            } finally {
+                submitUploadBtn.innerHTML = originalBtnText;
+            }
+        });
+
+        // ================= DELETE LOGIC =================
+        document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+            if (!currentPhotoIdToDelete) return;
+            
+            const btn = document.getElementById('confirm-delete-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Deleting...';
+
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'photos', currentPhotoIdToDelete));
+                deleteModal.classList.add('hidden-force');
+                showNotification('Memory deleted.', 'success');
+            } catch (error) {
+                console.error(error);
+                alert("Could not delete. Check if you are the owner.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Yes, delete';
+                currentPhotoIdToDelete = null;
+            }
+        });
+
+        document.getElementById('cancel-delete-btn').addEventListener('click', () => {
+            deleteModal.classList.add('hidden-force');
+            currentPhotoIdToDelete = null;
+        });
+
+        document.getElementById('close-fullscreen-btn').addEventListener('click', () => {
+            fullscreenViewer.classList.add('hidden-force');
+        });
+        
+    </script>
+</body>
+</html>
